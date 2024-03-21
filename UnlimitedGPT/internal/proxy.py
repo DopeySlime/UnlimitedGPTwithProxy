@@ -4,15 +4,8 @@ from urllib.parse import urlparse
 
 class ChromeProxyExtension:
     def __init__(self, proxy_link, proxy_folder_path):
-        if not self._validate_proxy_link(proxy_link):
-            raise ValueError("Invalid proxy link format. Expected format: http[s]://[user:password@]host[:port]")
-
         self._parse_proxy_link(proxy_link)
         self.proxy_folder = proxy_folder_path
-
-    def _validate_proxy_link(self, proxy_link):
-        regex = r'^http[s]?://(?:[A-Za-z0-9._~%-]+:[A-Za-z0-9._~%-]+@)?[A-Za-z0-9.-]+(?::\d{1,5})?$'
-        return re.match(regex, proxy_link) is not None
 
     def _parse_proxy_link(self, proxy_link):
         parsed_link = urlparse(proxy_link)
