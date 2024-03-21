@@ -16,7 +16,7 @@ class ChatGPTDriver(uc.Chrome):
         driver_path = kwargs.get('driver_path', '')
         if driver_path:
             super().__init__(options=options, headless=headless, desired_capabilities=caps,
-                             driver_executable_path=driver_path)
+                             driver_executable_path=driver_path, version_main=122)
         else:
             super().__init__(options=options, headless=headless, desired_capabilities=caps)
 
