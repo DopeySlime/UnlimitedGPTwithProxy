@@ -23,7 +23,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from undetected_chromedriver import ChromeOptions
 
-from UnlimitedGPT.internal.proxy import ChromeProxyExtension
 from UnlimitedGPT.internal.selectors import ChatGPTVariables as CGPTV
 from UnlimitedGPT.internal.driver import ChatGPTDriver
 from UnlimitedGPT.internal.exceptions import InvalidConversationID
@@ -160,9 +159,7 @@ class ChatGPT:
         options.add_argument("--window-size=1024,768")
         options.add_argument("--disable-popup-blocking")
         if self._proxy:
-            # options.add_argument(f"--proxy-server={self._proxy}")
-            ChromeProxyExtension(self._proxy, self._proxy_folder).proxy_connection()
-            options.add_argument(f"--load-extension={self._proxy_folder}")
+            options.add_argument(f"--proxy-server={self._proxy}")
         for arg in self._chrome_args:
             options.add_argument(arg)
         try:

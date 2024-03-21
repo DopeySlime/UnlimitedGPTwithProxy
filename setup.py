@@ -14,12 +14,12 @@ with open("README.md") as f:
 
 setup(
     name="UnlimitedGPT",
-    author="Sxvxge",
-    url="https://github.com/Sxvxgee/UnlimitedGPT",
+    author="DopeySlime",
+    url="https://github.com/DopeySlime/UnlimitedGPTwithProxy",
     project_urls={
-        "Documentation": "https://github.com/Sxvxgee/UnlimitedGPT/blob/main/README.md",
-        "Issue tracker": "https://github.com/Sxvxgee/UnlimitedGPT/issues",
-        "Changelog": "https://github.com/Sxvxgee/UnlimitedGPT/blob/main/CHANGELOG.md",
+        "Documentation": "https://github.com/DopeySlime/UnlimitedGPTwithProxy/main/README.md",
+        "Issue tracker": "https://github.com/DopeySlime/UnlimitedGPTwithProxy/issues",
+        "Changelog": "https://github.com/DopeySlime/UnlimitedGPTwithProxy/blob/main/CHANGELOG.md",
     },
     version="0.1.9.3",
     packages=["UnlimitedGPT", "UnlimitedGPT/internal"],
