@@ -63,7 +63,7 @@ class ChatGPTVariables:
     )
 
     # URLs
-    chat_url = "https://chat.openai.com/"
+    chat_url = "https://chat.openai.com/chat"
 
     # Switch model button
     switch_model_btn = (
