@@ -23,10 +23,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from undetected_chromedriver import ChromeOptions
 
+from UnlimitedGPT.internal.proxy import ChromeProxyExtension
 from UnlimitedGPT.internal.selectors import ChatGPTVariables as CGPTV
 from UnlimitedGPT.internal.driver import ChatGPTDriver
 from UnlimitedGPT.internal.exceptions import InvalidConversationID
-from UnlimitedGPT.internal.objects import ChatGPTResponse, Conversations, DefaultAccount, SessionData, SharedConversations, User
+from UnlimitedGPT.internal.objects import ChatGPTResponse, Conversations, DefaultAccount, SessionData, \
+    SharedConversations, User
+
 
 class ChatGPT:
     """
@@ -50,18 +53,22 @@ class ChatGPT:
     """
 
     def __init__(
-        self,
-        session_token: str,
-        conversation_id: str = "",
-        proxy: Optional[str] = None,
-        disable_moderation: bool = False,
-        verbose: bool = False,
-        headless: bool = False,
-        chrome_args: list = [],
+            self,
+            session_token: str,
+            conversation_id: str = "",
+            proxy: Optional[str] = None,
+            disable_moderation: bool = False,
+            verbose: bool = False,
+            headless: bool = False,
+            chrome_args: list = [],
+            driver_path: Optional[str] = None,
+            proxy_folder: Optional[str] = '~/.local/share/UnlimitedGPT/temp_proxy',
     ) -> None:
         self._session_token = session_token
         self._conversation_id = conversation_id
+        self._driver_path = driver_path
         self._proxy = proxy
+        self._proxy_folder = proxy_folder
         self._disable_moderation = disable_moderation
         self._headless = headless
         self._chrome_args = chrome_args or []
@@ -70,7 +77,7 @@ class ChatGPT:
         self._init_logger(verbose)
 
         if self._proxy and not re.findall(
-            r"(https?|socks(4|5)?):\/\/.+:\d{1,5}", self._proxy  # type: ignore
+                r"(https?|socks(4|5)?):\/\/.+:\d{1,5}", self._proxy  # type: ignore
         ):
             raise ValueError("Invalid proxy format")
 
@@ -153,11 +160,13 @@ class ChatGPT:
         options.add_argument("--window-size=1024,768")
         options.add_argument("--disable-popup-blocking")
         if self._proxy:
-            options.add_argument(f"--proxy-server={self._proxy}")
+            # options.add_argument(f"--proxy-server={self._proxy}")
+            ChromeProxyExtension(self._proxy, self._proxy_folder).proxy_connection()
+            options.add_argument(f"--load-extension={self._proxy_folder}")
         for arg in self._chrome_args:
             options.add_argument(arg)
         try:
-            self.driver = ChatGPTDriver(options=options, headless=self._headless)
+            self.driver = ChatGPTDriver(options=options, headless=self._headless, driver_path=self._driver_path)
         except TypeError as e:
             if str(e) == "expected str, bytes or os.PathLike object, not NoneType":
                 raise ValueError("Chrome installation not found")
@@ -201,8 +210,8 @@ class ChatGPT:
         while self._is_active:
             self.logger.debug("Updating session...")
             payload = (
-                '{"event":"session","data":{"trigger":"getSession"},"timestamp":%d}'
-                % int(time())
+                    '{"event":"session","data":{"trigger":"getSession"},"timestamp":%d}'
+                    % int(time())
             )
             try:
                 self.driver.execute_script(
@@ -236,7 +245,8 @@ class ChatGPT:
 
         if not self._seen_onboarding:
             current_date = datetime.date.today().strftime("%Y-%m-%d")
-            self.driver.execute_script(f"localStorage.setItem('oai/apps/hasSeenOnboarding/chat', '\"{current_date}\"');")
+            self.driver.execute_script(
+                f"localStorage.setItem('oai/apps/hasSeenOnboarding/chat', '\"{current_date}\"');")
             self.driver.refresh()
             self._seen_onboarding = True
 
@@ -278,7 +288,7 @@ class ChatGPT:
             response = self.driver.find_element(By.TAG_NAME, "pre").text
         response = loads(response)
         if (not response) or (
-            "error" in response and response["error"] == "RefreshAccessTokenError"
+                "error" in response and response["error"] == "RefreshAccessTokenError"
         ):
             raise ValueError("Invalid session token")
         self.logger.debug("Authorization is valid")
@@ -339,7 +349,7 @@ class ChatGPT:
             if not data_controls_clicked:
                 self.logger.debug("Could not click data controls button")
                 return self._get_out_of_menu()
-            
+
             self.logger.debug("Clicked data controls button")
 
             # Click the "Manage" button for Shared Links
@@ -387,7 +397,7 @@ class ChatGPT:
                 and "json" in log_["params"]["response"]["mimeType"]
                 and int(log_["params"]["response"]["status"]) == 200
                 and "backend-api/accounts/check/" in log_["params"]["response"]["url"]
-            )
+        )
         )
         try:
             data = next(datas)
@@ -420,7 +430,7 @@ class ChatGPT:
                 and "json" in log_["params"]["response"]["mimeType"]
                 and log_["params"]["response"]["status"] == 200
                 and "/backend-api/conversations" in log_["params"]["response"]["url"]
-            )
+        )
         )
         try:
             data = next(datas)
@@ -467,10 +477,10 @@ class ChatGPT:
                     log_["params"]["requestId"]
                     for log_ in reversed([loads(lr["message"])["message"] for lr in logs_raw])
                     if (
-                        log_["method"] == "Network.responseReceived"
-                        and "json" in log_["params"]["response"]["mimeType"]
-                        and log_["params"]["response"]["status"] == 200
-                        and "/backend-api/shared_conversations" in log_["params"]["response"]["url"]
+                            log_["method"] == "Network.responseReceived"
+                            and "json" in log_["params"]["response"]["mimeType"]
+                            and log_["params"]["response"]["status"] == 200
+                            and "/backend-api/shared_conversations" in log_["params"]["response"]["url"]
                     )
                 )
                 break  # Found data, exit the loop
@@ -502,11 +512,11 @@ class ChatGPT:
         )
 
     def send_message(
-        self,
-        message: str,
-        timeout: int = 240,
-        input_mode: Literal["INSTANT", "SLOW"] = "INSTANT",
-        input_delay: float = 0.1,
+            self,
+            message: str,
+            timeout: int = 240,
+            input_mode: Literal["INSTANT", "SLOW"] = "INSTANT",
+            input_delay: float = 0.1,
     ) -> ChatGPTResponse:
         """
         Send a message to ChatGPT.
@@ -567,11 +577,11 @@ class ChatGPT:
             )
         except:
             return ChatGPTResponse(
-                response = None,
-                failed = True,
-                conversation_id = self._conversation_id
+                response=None,
+                failed=True,
+                conversation_id=self._conversation_id
             )
-        
+
         self.logger.debug("Getting response...")
         response = self._get_new_response()
         if response is None:
@@ -586,12 +596,12 @@ class ChatGPT:
             except:
                 pass
 
-        return ChatGPTResponse(response = response, conversation_id = self._conversation_id)
+        return ChatGPTResponse(response=response, conversation_id=self._conversation_id)
 
     def regenerate_response(
-        self,
-        message_timeout: int = 240,
-        click_timeout: int = 20,
+            self,
+            message_timeout: int = 240,
+            click_timeout: int = 20,
     ) -> ChatGPTResponse:
         """
         Regenerate the response.
@@ -635,11 +645,11 @@ class ChatGPT:
             )
         except:
             return ChatGPTResponse(
-                response = None,
-                failed = True,
-                conversation_id = self._conversation_id
+                response=None,
+                failed=True,
+                conversation_id=self._conversation_id
             )
-        
+
         self.logger.debug("Getting response...")
         response = self._get_new_response()
         if response is None:
@@ -648,7 +658,7 @@ class ChatGPT:
             return None
 
         self.logger.debug("Regenerated response")
-        return ChatGPTResponse(response = response, conversation_id = self._conversation_id)
+        return ChatGPTResponse(response=response, conversation_id=self._conversation_id)
 
     def reset_conversation(self) -> None:
         """
@@ -699,12 +709,12 @@ class ChatGPT:
 
             self.logger.debug("Cleared all conversations")
             self._get_out_of_menu()
-        except NoSuchElementException as e: # type: ignore
+        except NoSuchElementException as e:  # type: ignore
             self.logger.debug(f"Could not find menu buttons, exc: {e}")
             return self._get_out_of_menu()
 
     def switch_theme(
-        self, theme: Literal["LIGHT", "DARK", "OPPOSITE", "SYSTEM"]
+            self, theme: Literal["LIGHT", "DARK", "OPPOSITE", "SYSTEM"]
     ) -> None:
         """
         Switch the theme.
@@ -752,8 +762,9 @@ class ChatGPT:
             self.logger.debug("Clicked theme button")
 
             try:
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "[role='option']")))
-            except TimeoutException: # type: ignore
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "[role='option']")))
+            except TimeoutException:  # type: ignore
                 self.logger.debug("Could not load theme options")
                 return self._get_out_of_menu()
 
@@ -761,7 +772,7 @@ class ChatGPT:
             if not options:
                 self.logger.debug("Could not find theme options")
                 return self._get_out_of_menu()
-            
+
             if theme == "OPPOSITE":
                 if current_theme == "SYSTEM":
                     self.logger.debug("Theme cannot be set to opposite of system theme")
@@ -804,7 +815,7 @@ class ChatGPT:
 
             self.logger.debug("Theme switched")
             self._get_out_of_menu()
-        except NoSuchElementException as e: # type: ignore
+        except NoSuchElementException as e:  # type: ignore
             self.logger.debug("Could not find theme buttons")
             return self._get_out_of_menu()
 
@@ -849,7 +860,7 @@ class ChatGPT:
             response = self.driver.find_element(By.TAG_NAME, "pre").text
         response = loads(response)
         if (not response) or (
-            "error" in response and response["error"] == "RefreshAccessTokenError"
+                "error" in response and response["error"] == "RefreshAccessTokenError"
         ):
             raise ValueError("Invalid session token")
         session_data = SessionData(
@@ -975,7 +986,7 @@ class ChatGPT:
             self.logger.debug(
                 f'Could not {"enable" if state else "disable"} chat history'
             )
-        
+
         self._history_and_training_enabled = state
 
         return self._get_out_of_menu()

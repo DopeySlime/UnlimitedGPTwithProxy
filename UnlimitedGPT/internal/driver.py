@@ -3,17 +3,22 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+
 class ChatGPTDriver(uc.Chrome):
     """
     Custom selenium driver for ChatGPT.
     ##### Still in development.
     """
 
-    def __init__(self, options: uc.ChromeOptions, headless: bool = False):
+    def __init__(self, options: uc.ChromeOptions, headless: bool = False, *args, **kwargs):
         caps = DesiredCapabilities.CHROME
         caps['goog:loggingPrefs'] = {'performance': 'ALL'}
-        
-        super().__init__(options=options, headless=headless, desired_capabilities=caps)
+        driver_path = kwargs.get('driver_path', '')
+        if driver_path:
+            super().__init__(options=options, headless=headless, desired_capabilities=caps,
+                             driver_executable_path=driver_path)
+        else:
+            super().__init__(options=options, headless=headless, desired_capabilities=caps)
 
     def safe_click(self, mark, timeout: int = 10) -> bool:
         """
