@@ -156,7 +156,7 @@ class ChatGPT:
         self.logger.debug("Initializing browser...")
 
         options = ChromeOptions()
-        options.add_argument("--window-size=1024,768")
+        options.add_argument("--window-size=400, 400")
         options.add_argument("--disable-popup-blocking")
         if self._proxy:
             options.add_argument(f"--proxy-server={self._proxy}")
@@ -195,7 +195,20 @@ class ChatGPT:
 
         self.logger.debug("Opening chat page...")
         self.driver.get(f"{CGPTV.chat_url}/{self._conversation_id}")
+
         self._check_blocking_elements()
+
+        switch_model_button_clicked = self.driver.safe_click(
+            CGPTV.switch_model_btn, timeout=10
+        )
+        if not switch_model_button_clicked:
+            self.logger.debug(f"Switch model button not found")
+
+        switch_model_gpt4_button_clicked = self.driver.safe_click(
+            CGPTV.switch_model_btn_gtp4, timeout=10
+        )
+        if not switch_model_gpt4_button_clicked:
+            self.logger.debug(f"Switch model button not found")
 
         self._is_active = True
         Thread(target=self._keep_alive, daemon=True).start()
@@ -563,7 +576,7 @@ class ChatGPT:
 
         self.logger.debug("Waiting for completion...")
         try:
-            WebDriverWait(self.driver, 10).until(
+            WebDriverWait(self.driver, 30).until(
                 EC.presence_of_element_located(CGPTV.streaming)
             )
         except:

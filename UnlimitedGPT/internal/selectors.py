@@ -63,4 +63,14 @@ class ChatGPTVariables:
     )
 
     # URLs
-    chat_url = "https://chat.openai.com/chat"
+    chat_url = "https://chat.openai.com/"
+
+    # Switch model button
+    switch_model_btn = (
+        By.XPATH,
+        "//div[@class='group flex cursor-pointer items-center gap-1 rounded-xl py-2 px-3 text-lg font-medium hover:bg-token-main-surface-secondary radix-state-open:bg-token-main-surface-secondary'][@aria-haspopup='menu']"
+    )
+    switch_model_btn_gtp4 = (
+        By.XPATH,
+        "//div[contains(@class, 'cursor-pointer')][@role='menuitem']"
+    )
