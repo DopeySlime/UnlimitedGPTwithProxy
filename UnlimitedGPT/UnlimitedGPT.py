@@ -8,7 +8,7 @@ from os import environ
 from platform import system
 from threading import Thread
 from time import sleep, time
-from typing import Literal, Optional
+from typing import Literal, Optional, Tuple
 from weakref import finalize
 
 from selenium.common.exceptions import (
@@ -62,6 +62,7 @@ class ChatGPT:
             chrome_args: list = [],
             driver_path: Optional[str] = None,
             proxy_folder: Optional[str] = '~/.local/share/UnlimitedGPT/temp_proxy',
+            window_size: Tuple[int, int] = (100, 100),
     ) -> None:
         self._session_token = session_token
         self._conversation_id = conversation_id
@@ -73,6 +74,7 @@ class ChatGPT:
         self._chrome_args = chrome_args or []
         self._seen_onboarding = False
         self._history_and_training_enabled = True
+        self._window_size = window_size
         self._init_logger(verbose)
 
         if self._proxy and not re.findall(
@@ -156,7 +158,7 @@ class ChatGPT:
         self.logger.debug("Initializing browser...")
 
         options = ChromeOptions()
-        options.add_argument("--window-size=400, 400")
+        # options.add_argument("--window-size=400, 400")
         options.add_argument("--disable-popup-blocking")
         if self._proxy:
             options.add_argument(f"--proxy-server={self._proxy}")
@@ -164,6 +166,7 @@ class ChatGPT:
             options.add_argument(arg)
         try:
             self.driver = ChatGPTDriver(options=options, headless=self._headless, driver_path=self._driver_path)
+            self.driver.set_window_size(*self._window_size)
         except TypeError as e:
             if str(e) == "expected str, bytes or os.PathLike object, not NoneType":
                 raise ValueError("Chrome installation not found")
